@@ -21,14 +21,24 @@ PERSONALITIES = {
         "base_steal_probability": 0.2,
         "risk_tolerance": 0.3,
     },
-    "aggressive": {
+    "greedy": {
         "description": "Tends to steal and dominate",
         "base_steal_probability": 0.7,
         "risk_tolerance": 0.8,
     },
+    "balanced": {
+        "description": "Neutral starting point, adapts to you",
+        "base_steal_probability": 0.45,
+        "risk_tolerance": 0.5,
+    },
     "manipulative": {
         "description": "Says split, considers steal",
         "base_steal_probability": 0.5,
-        "risk_tolerance": 0.5,
+        "risk_tolerance": 0.6,
+    },
+    "random": {
+        "description": "Pure chaos, unpredictable",
+        "base_steal_probability": 0.5,
+        "risk_tolerance": 0.9,
     },
 }

@@ -143,7 +143,7 @@ const RealBackend = (() => {
     }
 
     async function playRound(sessionId, playerMove, state) {
-        return post('/play-round', { session_id: sessionId, player_move: playerMove });
+        return post('/play-round', { sessionId, playerMove });
     }
 
     async function getState(sessionId) {
@@ -151,7 +151,11 @@ const RealBackend = (() => {
     }
 
     async function negotiate(sessionId, playerMessage) {
-        return post('/negotiate', { session_id: sessionId, player_message: playerMessage || null });
+        return post('/negotiate', { sessionId, playerMessage: playerMessage || null });
+    }
+
+    async function endGame(sessionId) {
+        return post('/end-game', { sessionId });
     }
 
     return { startGame, playRound, getState, endGame, negotiate };
@@ -204,6 +208,7 @@ const Game = (() => {
 
         // Initial chart
         drawTrustChart();
+        NeuralInsight.reset();
 
         ScreenManager.show('screen-game');
         startRound();
@@ -252,7 +257,11 @@ const Game = (() => {
                 if (res.aiMessage) {
                     ChatUI.addMessage('ai', res.aiMessage);
                 }
+                if (res.prediction) {
+                    NeuralInsight.update(res.prediction);
+                }
             }
+
         } catch (e) {
             console.error('Chat error', e);
         }
@@ -281,12 +290,55 @@ const Game = (() => {
         let aiMove, playerGain, aiGain;
 
         try {
+            console.log(`[DEBUG] Playing round with move: ${playerMove}`);
             const res = await Backend.playRound(gameState.sessionId, playerMove, gameState);
+            console.log('[DEBUG] Backend response:', res);
+
+            if (!res.ok) {
+                throw new Error(res.error || 'Unknown backend error');
+            }
+
             aiMove = res.aiMove;
             playerGain = res.playerGain;
             aiGain = res.aiGain;
+            
+            // Success! Update state
+            gameState.playerMoves.push(playerMove);
+            gameState.aiMoves.push(aiMove);
+            gameState.playerScore += playerGain;
+            gameState.aiScore += aiGain;
+            gameState.playerRoundScores.push(playerGain);
+            gameState.aiRoundScores.push(aiGain);
+
+            // Trust update
+            if (res.trustScore !== undefined) {
+                gameState.trustLevel = res.trustScore;
+                TrustMeter.setTrust(res.trustScore);
+            } else {
+                TrustMeter.updateFromMoves(playerMove, aiMove);
+                gameState.trustLevel = TrustMeter.get();
+            }
+            gameState.trustHistory.push(gameState.trustLevel);
+
+            // Update UI
+            AIAvatar.stopThinking(gameState.personality);
+            HistoryChips.add('player-history', playerMove);
+            HistoryChips.add('ai-history', aiMove);
+            ScorePanel.update(gameState.playerScore, gameState.aiScore);
+            HUD.update(gameState.currentRound, gameState.rounds, gameState.pot, gameState.personality);
+
+            const deltaText = buildDeltaText(playerMove, aiMove, playerGain, aiGain);
+            ResultDisplay.showResult(playerMove, aiMove, null, deltaText);
+            drawTrustChart();
+
+            if (res.strategy && res.strategy.prediction) {
+                NeuralInsight.update(res.strategy.prediction);
+            }
+
+
         } catch (e) {
             console.error('Round error:', e);
+            alert(`Communication error: ${e.message}`);
             gameState.waitingForAI = false;
             setDecisionsEnabled(true);
             ResultDisplay.reset();
@@ -294,34 +346,6 @@ const Game = (() => {
             return;
         }
 
-        // Update state
-        gameState.playerMoves.push(playerMove);
-        gameState.aiMoves.push(aiMove);
-        gameState.playerScore += playerGain;
-        gameState.aiScore += aiGain;
-        gameState.playerRoundScores.push(playerGain);
-        gameState.aiRoundScores.push(aiGain);
-
-        // Trust update
-        if (res && res.trustScore !== undefined) {
-            gameState.trustLevel = res.trustScore;
-            TrustMeter.setTrust(res.trustScore);
-        } else {
-            TrustMeter.updateFromMoves(playerMove, aiMove);
-            gameState.trustLevel = TrustMeter.get();
-        }
-        gameState.trustHistory.push(gameState.trustLevel);
-
-        // Update UI
-        AIAvatar.stopThinking(gameState.personality);
-        HistoryChips.add('player-history', playerMove);
-        HistoryChips.add('ai-history', aiMove);
-        ScorePanel.update(gameState.playerScore, gameState.aiScore);
-        HUD.update(gameState.currentRound, gameState.rounds, gameState.pot, gameState.personality);
-
-        const deltaText = buildDeltaText(playerMove, aiMove, playerGain, aiGain);
-        ResultDisplay.showResult(playerMove, aiMove, null, deltaText);
-        drawTrustChart();
 
         gameState.waitingForAI = false;
 

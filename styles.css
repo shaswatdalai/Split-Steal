@@ -1624,6 +1624,94 @@ canvas {
     flex: none;
 }
 
-.hidden {
-    display: none !important;
+
+/* ═══════════════════════════════════════════
+   NEURAL INSIGHT (ML)
+   ═══════════════════════════════════════════ */
+.neural-insight {
+  margin-top: 15px;
+  padding: 12px;
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 243, 255, 0.2);
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.05);
 }
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.65rem;
+  color: var(--neon-blue);
+  opacity: 0.8;
+  letter-spacing: 1px;
+}
+
+.insight-pulse {
+  width: 6px;
+  height: 6px;
+  background: var(--neon-blue);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--neon-blue);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.insight-prediction {
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+
+.pred-label {
+  opacity: 0.6;
+  margin-right: 8px;
+  font-size: 0.7rem;
+}
+
+.pred-val {
+  color: #fff;
+  text-shadow: 0 0 10px var(--neon-blue);
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.insight-confidence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conf-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+
+.conf-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.conf-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--neon-blue), #fff);
+  box-shadow: 0 0 15px var(--neon-blue);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.5; }
+}

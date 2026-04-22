@@ -443,3 +443,40 @@ const ChatUI = (() => {
 
     return { addMessage, clear, setStatus, show, setEnabled, getAndClearInput };
 })();
+
+/* ─── NEURAL INSIGHT (ML) ────────────────────────── */
+const NeuralInsight = (() => {
+    function update(prediction) {
+        if (!prediction) return;
+        const moveEl = document.getElementById('pred-move');
+        const confEl = document.getElementById('pred-conf');
+        const fillEl = document.getElementById('pred-conf-fill');
+        
+        if (moveEl) {
+            moveEl.textContent = prediction.move.toUpperCase();
+            moveEl.style.color = prediction.move === 'split' ? 'var(--neon-green)' : 'var(--neon-red)';
+            moveEl.style.textShadow = `0 0 10px ${prediction.move === 'split' ? 'var(--neon-green)' : 'var(--neon-red)'}`;
+        }
+        
+        if (confEl) {
+            confEl.textContent = Math.round(prediction.confidence * 100) + '%';
+        }
+        
+        if (fillEl) {
+            fillEl.style.width = (prediction.confidence * 100) + '%';
+            fillEl.style.background = prediction.move === 'split' ? 'var(--neon-green)' : 'var(--neon-red)';
+            fillEl.style.boxShadow = `0 0 15px ${prediction.move === 'split' ? 'var(--neon-green)' : 'var(--neon-red)'}`;
+        }
+    }
+
+    function reset() {
+        const moveEl = document.getElementById('pred-move');
+        const confEl = document.getElementById('pred-conf');
+        const fillEl = document.getElementById('pred-conf-fill');
+        if (moveEl) moveEl.textContent = 'SCANNING...';
+        if (confEl) confEl.textContent = '0%';
+        if (fillEl) fillEl.style.width = '0%';
+    }
+
+    return { update, reset };
+})();

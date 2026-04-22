@@ -49,36 +49,60 @@ class DialogueEngine:
 
     _REACTIONS = {
         "question": [
-            "Fair question",
-            "That's a fair ask",
-            "Good point",
-            "You're right to ask",
+            "Fair question.",
+            "That's a fair ask.",
+            "Good point.",
+            "You're right to ask.",
         ],
         "doubt": [
-            "I get the doubt",
-            "Trust is fragile here",
-            "Skepticism makes sense",
-            "I hear you",
+            "I get the doubt.",
+            "Trust is fragile here.",
+            "Skepticism makes sense.",
+            "I hear you.",
         ],
         "threat": [
-            "If we escalate, we both get burned",
-            "That line can zero us both",
-            "Threats usually kill the pot",
-            "That move can backfire",
+            "If we escalate, we both get burned.",
+            "That line can zero us both.",
+            "Threats usually kill the pot.",
+            "That move can backfire.",
         ],
         "cooperation": [
-            "Good, we're aligned",
-            "That's the right direction",
-            "That makes this cleaner",
-            "We're on the same page",
+            "Good, we're aligned.",
+            "That's the right direction.",
+            "That makes this cleaner.",
+            "We're on the same page.",
         ],
         "neutral": [
-            "We can still keep this clean",
-            "This is still recoverable",
-            "There's still a clean win path",
-            "We can keep this simple",
+            "We can still keep this clean.",
+            "This is still recoverable.",
+            "There's still a clean win path.",
+            "We can keep this simple.",
         ],
     }
+
+    _KEYWORD_REACTIONS = {
+        "trust": [
+            "Trust is earned, not just spoken.",
+            "Consistency is the only thing that builds trust here.",
+            "I want to trust the line, but I'm watching the moves.",
+        ],
+        "split": [
+            "A split is the only way we both walk away with value.",
+            "Splitting keeps the game stable for both of us.",
+            "I'm leaning towards a split if you are.",
+        ],
+        "steal": [
+            "Stealing might look good for one round, but it kills the game.",
+            "If someone steals, the trust index hits zero immediately.",
+            "A steal is a one-time win that costs everything later.",
+        ],
+        "deal": [
+            "I'm open to a deal if it stays consistent.",
+            "A deal only works if both sides stick to it.",
+            "Let's see if we can keep this deal alive.",
+        ],
+    }
+
 
     _SPLIT_PUSH = {
         "cooperative": [
@@ -182,10 +206,19 @@ class DialogueEngine:
         persona = context.personality if context.personality in self._OPENERS else "manipulative"
         message_type = user_profile.message_type
 
-        reaction = self._pick_non_repeating_fragment(
-            self._REACTIONS[message_type],
-            context.recent_ai_messages,
-        )
+        # Priority: Keyword-based reaction
+        reaction = None
+        lowered_msg = (context.opponent_message or "").lower()
+        for kw, pool in self._KEYWORD_REACTIONS.items():
+            if kw in lowered_msg:
+                reaction = self._pick_non_repeating_fragment(pool, context.recent_ai_messages)
+                break
+        
+        if not reaction:
+            reaction = self._pick_non_repeating_fragment(
+                self._REACTIONS[message_type],
+                context.recent_ai_messages,
+            )
 
         if context.intended_action.startswith("SPLIT"):
             strategy_line = self._pick_non_repeating_fragment(self._SPLIT_PUSH[persona], context.recent_ai_messages)
@@ -198,6 +231,7 @@ class DialogueEngine:
             context.recent_ai_messages,
         )
         opener = random.choice(self._OPENERS[persona])
+
 
         if context.confidence < 0.62:
             middle = f"{random.choice(self._HEDGES)}, {strategy_line}."

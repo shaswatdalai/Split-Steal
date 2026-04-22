@@ -4,11 +4,13 @@ import random
 from abc import ABC, abstractmethod
 from collections import deque
 
-from game.models import PlayerAction, GameState
+from game.models import PlayerAction, GameState, RoundResult
 from game.dialogue import DialogueContext, DialogueEngine
+from game.intent import IntentClassifier
 from game.llm import LLMClient, LLMConfig
 from game.memory import AIMemory
 from game.strategy import StrategyEngine, StrategyAssessment
+from game.learning import PlayerPredictor
 
 
 class Player(ABC):
@@ -69,7 +71,7 @@ class RandomAI(Player):
         name: str = "AI Opponent",
         personality: str = "manipulative",
         use_llm: bool = False,
-        llm_model: str = "gpt-4o-mini",
+        llm_model: str = "llama-3.1-8b-instant",
         llm_timeout_seconds: float = 8.0,
     ):
         super().__init__(name)
@@ -83,6 +85,7 @@ class RandomAI(Player):
         self.dialogue_engine = DialogueEngine(llm_client=self.llm_client, use_llm=use_llm)
         self.use_llm = use_llm
         self.memory = AIMemory()
+        self.predictor = PlayerPredictor()
         self._last_assessment: StrategyAssessment | None = None
         self._assessment_signature: tuple[int, int, int, int] | None = None
         self._round_number_context: int | None = None
@@ -115,6 +118,7 @@ class RandomAI(Player):
 
     def get_action(self, game_state: GameState) -> PlayerAction:
         """Choose final action based on adaptive strategy confidence."""
+        self._last_state = game_state
         assessment = self._ensure_round_assessment(game_state)
         steal_probability = assessment.steal_probability
         confidence = assessment.confidence
@@ -151,15 +155,26 @@ class RandomAI(Player):
         return min(0.30, base_floor)
 
     def get_strategy_snapshot(self) -> dict | None:
-        """Return latest strategy metrics for logging/display."""
+        """Return the current strategic state including ML predictions."""
         if self._last_assessment is None:
             return None
+
+        # Get ML prediction
+        prediction = self.predictor.predict(
+            game_state=self._last_state, 
+            recent_sentiment=0.0 # Could be derived from intent analysis
+        ) if hasattr(self, '_last_state') and self._last_state else None
+
         return {
             "personality": self.strategy_engine.personality,
             "intended_action": self._last_assessment.intended_action,
             "confidence": self._last_assessment.confidence,
             "risk_level": self._last_assessment.risk_level,
             "steal_probability": self._last_assessment.steal_probability,
+            "prediction": {
+                "move": prediction.move.value if prediction else "UNKNOWN",
+                "confidence": prediction.confidence if prediction else 0.0
+            } if prediction else None,
             "memory": self.memory.snapshot(),
             "llm_enabled": self.use_llm,
             "llm_active": self.llm_client.available,
@@ -232,16 +247,27 @@ class RandomAI(Player):
 
         words = [w for w in text.replace(".", " ").replace("!", " ").split() if w]
         if len(words) <= 2 and all(len(word) <= 4 for word in words):
-            return ""
+            return None
 
         return None
 
     def notify_result(self, result) -> None:
-        """Update long-term memory after each completed round."""
+        """Update long-term memory and ML predictor after each round."""
         self.memory.update_after_round(
             player_action=result.player_action,
             ai_action=result.opponent_action,
             trust_score=result.trust_after,
             confidence=result.ai_confidence,
             betrayal_flag=result.betrayal_flag,
+        )
+        
+        # Update ML predictor
+        history = self.memory.player_actions
+        prev_p = history[-2] if len(history) >= 2 else None
+        prev_ai = self.memory.ai_actions[-2] if len(self.memory.ai_actions) >= 2 else None
+        
+        self.predictor.update(
+            player_move=result.player_action,
+            prev_player_move=prev_p,
+            prev_ai_move=prev_ai
         )
