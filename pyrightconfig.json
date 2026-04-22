@@ -2,7 +2,11 @@
   "pythonVersion": "3.13",
   "venvPath": ".",
   "venv": ".venv",
-  "include": ["."],
-  "extraPaths": ["."],
+  "include": [
+    "."
+  ],
+  "extraPaths": [
+    "."
+  ],
   "pythonPlatform": "Windows"
 }

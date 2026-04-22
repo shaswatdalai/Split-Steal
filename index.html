@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPLIT & STEAL — Prisoner's Dilemma</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+
+  <!-- PARTICLE CANVAS -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- GRID OVERLAY -->
+  <div class="grid-overlay"></div>
+  <div class="scanline"></div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1: LANDING
+  ═══════════════════════════════════════════ -->
+  <section id="screen-landing" class="screen active">
+    <div class="landing-content">
+      <div class="title-block">
+        <div class="pre-title glitch-text" data-text="[ CLASSIFIED EXPERIMENT v2.7 ]">[ CLASSIFIED EXPERIMENT v2.7 ]
+        </div>
+        <h1 class="main-title" id="main-title">
+          <span class="title-split flicker">SPLIT</span>
+          <span class="title-amp">&amp;</span>
+          <span class="title-steal flicker-delay">STEAL</span>
+        </h1>
+        <div class="subtitle">
+          <span class="typing-text" id="typing-subtitle"></span><span class="cursor-blink">█</span>
+        </div>
+      </div>
+
+      <div class="landing-card glass-panel">
+        <div class="card-header">
+          <span class="terminal-label">// IDENTITY VERIFICATION</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">AGENT DESIGNATION</label>
+          <input type="text" id="player-name" class="neon-input" placeholder="Enter your callsign..." maxlength="20"
+            autocomplete="off" />
+          <div class="input-underline"></div>
+        </div>
+        <div class="button-row">
+          <button class="btn-primary" id="btn-start">
+            <span class="btn-glow"></span>
+            <span class="btn-text">▶ ENTER SIMULATION</span>
+          </button>
+          <button class="btn-secondary" id="btn-settings">
+            <span class="btn-text">⚙ SETTINGS</span>
+          </button>
+        </div>
+        <div class="flavor-text">
+          <span class="dot dot-green"></span> SYSTEM ONLINE — PRISONER AI LOADED
+        </div>
+      </div>
+
+      <div class="lore-block">
+        <div class="lore-line">TWO AGENTS. ONE CHOICE. INFINITE CONSEQUENCES.</div>
+        <div class="lore-line small">SPLIT the reward — or STEAL it all. Trust no one.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       SETTINGS MODAL
+  ═══════════════════════════════════════════ -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-panel glass-panel">
+      <div class="modal-header">
+        <span class="terminal-label">// MISSION PARAMETERS</span>
+        <button class="btn-close" id="btn-close-settings">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="setting-group">
+          <label class="setting-label">ROUNDS</label>
+          <div class="slider-row">
+            <input type="range" id="setting-rounds" min="3" max="15" value="5" class="neon-slider" />
+            <span class="slider-val" id="rounds-val">5</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">POT SIZE (¢)</label>
+          <div class="slider-row">
+            <input type="range" id="setting-pot" min="100" max="1000" step="50" value="300" class="neon-slider" />
+            <span class="slider-val" id="pot-val">300</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">AI PERSONALITY</label>
+          <div class="personality-grid" id="personality-grid">
+            <div class="personality-card active" data-val="cooperative" data-tip="Prefers mutual benefit. High trust.">
+              <div class="p-icon">🤝</div>
+              <div class="p-name">COOPERATIVE</div>
+              <div class="p-bar">
+                <div class="p-fill" style="width:85%; background: var(--neon-green)"></div>
+              </div>
+            </div>
+            <div class="personality-card" data-val="greedy" data-tip="Always seeks maximum gain. Low trust.">
+              <div class="p-icon">💀</div>
+              <div class="p-name">GREEDY</div>
+              <div class="p-bar">
+                <div class="p-fill" style="width:90%; background: var(--neon-red)"></div>
+              </div>
+            </div>
+            <div class="personality-card" data-val="balanced" data-tip="Mirrors your moves. Tit-for-tat.">
+              <div class="p-icon">⚖️</div>
+              <div class="p-name">BALANCED</div>
+              <div class="p-bar">
+                <div class="p-fill" style="width:50%; background: var(--neon-blue)"></div>
+              </div>
+            </div>
+            <div class="personality-card" data-val="random" data-tip="Pure chaos. Unpredictable.">
+              <div class="p-icon">🎲</div>
+              <div class="p-name">RANDOM</div>
+              <div class="p-bar">
+                <div class="p-fill" style="width:50%; background: var(--neon-yellow)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="personality-tooltip" id="p-tooltip"></div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">LLM OPPONENT</label>
+          <div class="toggle-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="setting-llm" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Enable AI language model opponent</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="btn-save-settings">
+          <span class="btn-text">✓ SAVE PARAMETERS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 2: GAME
+  ═══════════════════════════════════════════ -->
+  <section id="screen-game" class="screen hidden">
+    <div class="game-layout">
+
+      <!-- TOP HUD -->
+      <div class="hud-bar glass-panel">
+        <div class="hud-item">
+          <span class="hud-label">ROUND</span>
+          <span class="hud-val" id="hud-round">1 / 5</span>
+        </div>
+        <div class="hud-item center">
+          <span class="hud-label">POT VALUE</span>
+          <span class="hud-val neon-green" id="hud-pot">¢ 300</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">PERSONALITY</span>
+          <span class="hud-val" id="hud-personality">COOPERATIVE</span>
+        </div>
+      </div>
+
+      <!-- MAIN ARENA -->
+      <div class="arena-grid">
+
+        <!-- PLAYER PANEL -->
+        <div class="player-panel glass-panel">
+          <div class="panel-header">
+            <span class="terminal-label">// YOU</span>
+            <span class="score-badge" id="player-score">¢ 0</span>
+          </div>
+          <div class="avatar-block">
+            <div class="avatar player-avatar">
+              <div class="avatar-ring"></div>
+              <span class="avatar-icon">🕵️</span>
+            </div>
+            <div class="player-name-display" id="display-player-name">AGENT</div>
+          </div>
+          <div class="decision-history" id="player-history"></div>
+        </div>
+
+        <!-- CENTER COLUMN -->
+        <div class="center-column">
+          <!-- TRUST METER -->
+          <div class="trust-section glass-panel">
+            <div class="trust-header">
+              <span class="terminal-label">// TRUST LEVEL</span>
+              <span class="trust-pct" id="trust-pct">50%</span>
+            </div>
+            <div class="trust-track">
+              <div class="trust-bar" id="trust-bar">
+                <div class="trust-fill" id="trust-fill"></div>
+                <div class="trust-glow" id="trust-glow"></div>
+              </div>
+              <div class="trust-labels">
+                <span>HOSTILE</span><span>NEUTRAL</span><span>ALLIED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHAT / NEGOTIATION SECTION -->
+          <div class="chat-section glass-panel hidden" id="chat-section">
+            <div class="chat-header">
+              <span class="terminal-label">// NEGOTIATION CHANNEL</span>
+              <span class="chat-status" id="chat-status">ENCRYPTED LINK ACTIVE</span>
+            </div>
+            <div class="chat-log" id="chat-log"></div>
+            <div class="chat-input-area" id="chat-input-area">
+              <input type="text" id="chat-input" class="neon-input" placeholder="Transmit message..." autocomplete="off"
+                maxlength="120" />
+              <button class="btn-primary btn-chat-send" id="btn-chat-send">
+                <span class="btn-text">SEND</span>
+              </button>
+            </div>
+            <div class="chat-controls">
+              <button class="btn-secondary btn-chat-skip" id="btn-chat-skip">
+                <span class="btn-text">END NEGOTIATION (PROCEED TO DECISION)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ROUND RESULT DISPLAY -->
+          <div class="result-section glass-panel" id="result-section">
+            <div class="result-idle" id="result-idle">
+              <span class="result-idle-text">AWAITING DECISION...</span>
+              <div class="thinking-dots" id="thinking-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="result-reveal hidden" id="result-reveal">
+              <div class="result-choices">
+                <div class="choice-box" id="r-player-choice"></div>
+                <div class="vs-divider">VS</div>
+                <div class="choice-box" id="r-ai-choice"></div>
+              </div>
+              <div class="result-outcome" id="result-outcome"></div>
+              <div class="result-delta" id="result-delta"></div>
+            </div>
+          </div>
+
+          <!-- DECISION BUTTONS -->
+          <div class="decision-area" id="decision-area">
+            <button class="btn-decision btn-split" id="btn-split">
+              <span class="decision-icon">🤝</span>
+              <span class="decision-label">SPLIT</span>
+              <span class="decision-sub">Share the pot equally</span>
+            </button>
+            <button class="btn-decision btn-steal" id="btn-steal">
+              <span class="decision-icon">⚔️</span>
+              <span class="decision-label">STEAL</span>
+              <span class="decision-sub">Take everything</span>
+            </button>
+          </div>
+          <div class="next-round-area hidden" id="next-round-area">
+            <button class="btn-primary" id="btn-next-round">
+              <span class="btn-text">▶ NEXT ROUND</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI PANEL -->
+        <div class="ai-panel glass-panel">
+          <div class="panel-header">
+            <span class="terminal-label">// OPPONENT</span>
+            <span class="score-badge neon-red" id="ai-score">¢ 0</span>
+          </div>
+          <div class="avatar-block">
+            <div class="avatar ai-avatar" id="ai-avatar">
+              <div class="avatar-ring ai-ring"></div>
+              <span class="avatar-icon" id="ai-icon">🤖</span>
+            </div>
+            <div class="player-name-display" id="display-ai-name">PRISONER AI</div>
+          </div>
+          <div class="decision-history" id="ai-history"></div>
+        </div>
+      </div>
+
+      <!-- TRUST HISTORY CHART -->
+      <div class="chart-section glass-panel">
+        <div class="chart-header">
+          <span class="terminal-label">// TRUST TIMELINE</span>
+          <div class="chart-legend">
+            <span class="legend-dot green"></span> Mutual Split
+            <span class="legend-dot red"></span> Betrayal
+            <span class="legend-dot yellow"></span> You Stole
+          </div>
+        </div>
+        <canvas id="trust-chart" height="80"></canvas>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 3: FINAL RESULTS
+  ═══════════════════════════════════════════ -->
+  <section id="screen-results" class="screen hidden">
+    <div class="results-content">
+      <div class="winner-banner" id="winner-banner">
+        <div class="winner-label" id="winner-label">SIMULATION COMPLETE</div>
+        <div class="winner-name" id="winner-name">LOADING...</div>
+        <div class="winner-sub" id="winner-sub"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card glass-panel" id="stat-player">
+          <div class="stat-header" id="stat-player-name">AGENT</div>
+          <div class="stat-score" id="stat-player-score">¢ 0</div>
+          <div class="stat-bars" id="stat-player-bars"></div>
+        </div>
+
+        <div class="stat-divider">
+          <div class="final-chart-wrap glass-panel">
+            <div class="terminal-label" style="margin-bottom:8px">// DECISION LOG</div>
+            <canvas id="final-chart" height="140"></canvas>
+          </div>
+        </div>
+
+        <div class="stat-card glass-panel" id="stat-ai">
+          <div class="stat-header" id="stat-ai-name">AI</div>
+          <div class="stat-score" id="stat-ai-score">¢ 0</div>
+          <div class="stat-bars" id="stat-ai-bars"></div>
+        </div>
+      </div>
+
+      <div class="result-message glass-panel" id="result-message"></div>
+
+      <div class="results-buttons">
+        <button class="btn-primary" id="btn-restart">
+          <span class="btn-text">↺ RUN AGAIN</span>
+        </button>
+        <button class="btn-secondary" id="btn-home">
+          <span class="btn-text">⌂ MAIN MENU</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script src="animations.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
